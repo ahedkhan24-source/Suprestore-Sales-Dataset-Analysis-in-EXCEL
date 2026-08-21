@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2015 SuperStore Performance Analysis</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-green: #34d399;
+            --accent-red: #f87171;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .slide-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 580px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+            position: relative;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .slide-container.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Slide Typography */
+        .slide-header {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .slide-header h2 {
+            font-size: 1.8rem;
+            color: var(--accent-color);
+        }
+
+        .slide-header p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .slide-body {
+            flex-grow: 1;
+            display: flex;
+            gap: 20px;
+        }
+
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Title Slide */
+        .title-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .title-slide h1 {
+            font-size: 2.8rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        .title-slide h3 {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+
+        .badge {
+            background-color: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-color);
+            font-size: 0.85rem;
+        }
+
+        /* Metric Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+
+        .metric-card {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 10px 0;
+        }
+
+        .metric-value.green { color: var(--accent-green); }
+        .metric-value.red { color: var(--accent-red); }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Layout Columns */
+        .col-2 {
+            flex: 1;
+        }
+
+        /* Data Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: rgba(15, 23, 42, 0.8);
+            color: var(--accent-color);
+        }
+
+        tr:hover {
+            background-color: rgba(56, 189, 248, 0.05);
+        }
+
+        .negative { color: var(--accent-red); font-weight: bold; }
+        .positive { color: var(--accent-green); font-weight: bold; }
+
+        /* Bullet Points */
+        ul.custom-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul.custom-list li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-color);
+        }
+
+        ul.custom-list li::before {
+            content: "➔";
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+        }
+
+        /* Navigation Controls */
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Slide 1: Title -->
+    <div class="slide-container title-slide active" id="slide-1">
+        <div>
+            <span class="badge">Data Analysis Report</span>
+            <h1 style="margin-top: 20px;">2015 SuperStore Performance</h1>
+            <h3>Strategic Insights & Profitability Blueprint</h3>
+        </div>
+        <div class="slide-footer" style="width: 100%;">
+            <span>Prepared by: Senior Data Analyst</span>
+            <span>Dataset: SuperStoreUS-2015</span>
+        </div>
+    </div>
+
+    <!-- Slide 2: Executive Summary -->
+    <div class="slide-container" id="slide-2">
+        <div class="slide-header">
+            <h2>Executive Summary</h2>
+            <p>High-level overview of overall sales performance and margins for 2015</p>
+        </div>
+        <div class="slide-body" style="flex-direction: column; justify-content: center;">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Revenue</div>
+                    <div class="metric-value">$1,924,338</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Net Profit</div>
+                    <div class="metric-value green">$224,078</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Orders</div>
+                    <div class="metric-value">1,365</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Profit Margin</div>
+                    <div class="metric-value green">11.64%</div>
+                </div>
+            </div>
+            <div style="margin-top: 30px;">
+                <ul class="custom-list">
+                    <li><strong>Overall Performance:</strong> SuperStore maintained healthy operational top-line sales exceeding $1.92M.</li>
+                    <li><strong>Category Driver:</strong> Technology leads in total revenue, while Office Supplies delivers the highest overall profit margin.</li>
+                    <li><strong>Critical Risk:</strong> The South region registered significant operational losses requiring immediate structural adjustments.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">
+            <span>2015 SuperStore Performance</span>
+            <span>Slide 2 of 5</span>
+        </div>
+    </div>
+
+    <!-- Slide 3: Regional Analysis -->
+    <div class="slide-container" id="slide-3">
+        <div class="slide-header">
+            <h2>Regional Performance Breakdown</h2>
+            <p>Evaluating revenue generation versus net profitability by geographic region</p>
+        </div>
+        <div class="slide-body">
+            <div class="col-2">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Region</th>
+                            <th>Sales ($)</th>
+                            <th>Profit ($)</th>
+                            <th>Margin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>East</td>
+                            <td>$592,171</td>
+                            <td class="positive">$85,291</td>
+                            <td>14.4%</td>
+                        </tr>
+                        <tr>
+                            <td>Central</td>
+                            <td>$448,285</td>
+                            <td class="positive">$77,365</td>
+                            <td>17.3%</td>
+                        </tr>
+                        <tr>
+                            <td>West</td>
+                            <td>$526,777</td>
+                            <td class="positive">$75,845</td>
+                            <td>14.4%</td>
+                        </tr>
+                        <tr>
+                            <td>South</td>
+                            <td>$357,105</td>
+                            <td class="negative">-$14,424</td>
+                            <td class="negative">-4.0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-2" style="padding-left: 15px;">
+                <h4 style="color: var(--accent-color); margin-bottom: 10px;">Key Observations:</h4>
+                <ul class="custom-list">
+                    <li><strong>Central Region Efficiency:</strong> Achieved highest profitability margin (17.3%) despite holding lower total volume than East/West.</li>
+                    <li><strong>Southern Deficit:</strong> South generated $357k in top-line revenue but posted an aggregate loss of $14.4k due to high base costs & aggressive discounting.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">
+            <span>2015 SuperStore Performance</span>
+            <span>Slide 3 of 5</span>
+        </div>
+    </div>
+
+    <!-- Slide 4: Category Analysis -->
+    <div class="slide-container" id="slide-4">
+        <div class="slide-header">
+            <h2>Product Category Performance</h2>
+            <p>Identifying margin variations across core product categories</p>
+        </div>
+        <div class="slide-body">
+            <div class="col-2">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Sales ($)</th>
+                            <th>Profit ($)</th>
+                            <th>Margin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Office Supplies</td>
+                            <td>$551,369</td>
+                            <td class="positive">$89,525</td>
+                            <td class="positive">16.2%</td>
+                        </tr>
+                        <tr>
+                            <td>Technology</td>
+                            <td>$712,265</td>
+                            <td class="positive">$75,303</td>
+                            <td>10.6%</td>
+                        </tr>
+                        <tr>
+                            <td>Furniture</td>
+                            <td>$660,704</td>
+                            <td class="positive">$59,249</td>
+                            <td>9.0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-2" style="padding-left: 15px;">
+                <h4 style="color: var(--accent-color); margin-bottom: 10px;">Category Drivers:</h4>
+                <ul class="custom-list">
+                    <li><strong>Office Supplies:</strong> Highest profit contributor ($89.5k) despite lowest sales volume, benefiting from solid base margins and manageable shipping expenses.</li>
+                    <li><strong>Technology:</strong> Dominates total sales ($712k), but overall margins are squeezed by high unit costs and freight fees.</li>
+                    <li><strong>Furniture:</strong> Yields the lowest margin (9.0%) primarily impacted by heavy weight shipping and container options.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-footer">
+            <span>2015 SuperStore Performance</span>
+            <span>Slide 4 of 5</span>
+        </div>
+    </div>
+
+    <!-- Slide 5: Strategic Recommendations -->
+    <div class="slide-container" id="slide-5">
+        <div class="slide-header">
+            <h2>Strategic Action Items</h2>
+            <p>Data-backed recommendations to improve margins and streamline profitability</p>
+        </div>
+        <div class="slide-body">
+            <ul class="custom-list" style="width: 100%; font-size: 1rem;">
+                <li style="margin-bottom: 20px;">
+                    <strong>Restructure Southern Territory Discounting:</strong><br>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Audit promotional discounts and carrier pricing in the South region to eliminate unrecoverable losses.</span>
+                </li>
+                <li style="margin-bottom: 20px;">
+                    <strong>Optimize Furniture Shipping Container Mix:</strong><br>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Review freight arrangements for bulky items (Chairs, Tables) to lower the shipping cost ratio.</span>
+                </li>
+                <li style="margin-bottom: 20px;">
+                    <strong>Scale Office Supplies Cross-Selling:</strong><br>
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Bundle lower-margin technology sales with high-margin office supplies to increase ticket profitability.</span>
+                </li>
+            </ul>
+        </div>
+        <div class="slide-footer">
+            <span>2015 SuperStore Performance</span>
+            <span>Slide 5 of 5</span>
+        </div>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="controls">
+        <button id="prevBtn" onclick="changeSlide(-1)" disabled>Previous</button>
+        <span class="page-indicator" id="pageIndicator">Slide 1 of 5</span>
+        <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 5;
+
+        function changeSlide(direction) {
+            document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+            currentSlide += direction;
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
+
+            // Update button states
+            document.getElementById('prevBtn').disabled = (currentSlide === 1);
+            document.getElementById('nextBtn').disabled = (currentSlide === totalSlides);
+            document.getElementById('pageIndicator').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && currentSlide < totalSlides) {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft' && currentSlide > 1) {
+                changeSlide(-1);
+            }
+        });
+    </script>
+</body>
+</html>
